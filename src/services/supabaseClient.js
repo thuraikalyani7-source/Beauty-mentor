@@ -1,14 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+// Disconnected from Supabase. Connected directly to Render PostgreSQL Auth.
+import { authClient, supabase } from "./authClient.js";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim();
-const supabaseKey = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY)?.trim();
-
-export const supabase = supabaseUrl && supabaseKey
-  ? createClient(supabaseUrl, supabaseKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-  })
-  : null;
+export { authClient, supabase };
