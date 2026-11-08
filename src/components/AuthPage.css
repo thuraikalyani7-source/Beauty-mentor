@@ -14,4 +14,37 @@
 .auth-message.error { border-color: #e8cbd5; background: #fff4f6; color: #9b3f58; }
 .auth-message.success { color: #526d5c; }
 .auth-loading { display: grid; min-height: calc(100vh - 145px); place-items: center; color: #70666e; }
+
+.resend-link-button {
+  display: inline-block;
+  margin: 4px 0 14px;
+  background: none;
+  border: none;
+  color: #a84d76;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+}
+.resend-link-button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.guest-access-wrapper { margin-top: 14px; text-align: center; }
+.auth-divider { display: flex; align-items: center; text-align: center; margin: 10px 0; color: #a0949d; font-size: 13px; }
+.auth-divider::before, .auth-divider::after { content: ''; flex: 1; border-bottom: 1px solid #ead8e1; }
+.auth-divider span { padding: 0 10px; }
+.guest-button {
+  width: 100%;
+  min-height: 44px;
+  border: 1.5px solid #a84d76;
+  border-radius: 999px;
+  background: transparent;
+  color: #a84d76;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.guest-button:hover { background: #fff0f5; }
+
 @media (max-width: 520px) { .auth-card { padding: 25px 21px; } }

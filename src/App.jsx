@@ -276,6 +276,7 @@ function readSavedRoutine() {
 function App() {
   const [page, setPage] = useState("dashboard");
   const [launchFinished, setLaunchFinished] = useState(false);
+  const [guestMode, setGuestMode] = useState(false);
   const [authStatus, setAuthStatus] = useState(supabase ? "loading" : "unconfigured");
   const [authSession, setAuthSession] = useState(null);
   const [authNotice, setAuthNotice] = useState("");
@@ -371,7 +372,7 @@ function App() {
 
   useEffect(() => {
     const syncPageFromUrl = () => {
-      if (authStatus !== "authenticated" || !authSession) {
+      if (!guestMode && (authStatus !== "authenticated" || !authSession)) {
         setPage("login");
         return;
       }
@@ -385,7 +386,7 @@ function App() {
       window.removeEventListener("popstate", syncPageFromUrl);
       window.removeEventListener("hashchange", syncPageFromUrl);
     };
-  }, [userPreferences, authStatus, authSession]);
+  }, [userPreferences, authStatus, authSession, guestMode]);
 
   useEffect(() => {
     try {
@@ -461,6 +462,11 @@ function App() {
   };
 
   const signOut = async () => {
+    if (guestMode) {
+      setGuestMode(false);
+      setPage("login");
+      return;
+    }
     if (!supabase) return;
     setAuthNotice("");
     try {
@@ -493,8 +499,17 @@ function App() {
     return <div className="app auth-loading" role="status" aria-live="polite">Restoring your Beauty Mentor session…</div>;
   }
 
-  if (authStatus !== "authenticated" || !authSession) {
-    return <AuthPage supabase={supabase} notice={authNotice} />;
+  if (!guestMode && (authStatus !== "authenticated" || !authSession)) {
+    return (
+      <AuthPage
+        supabase={supabase}
+        notice={authNotice}
+        onGuestAccess={() => {
+          setGuestMode(true);
+          setPage(userPreferences ? "dashboard" : "onboarding");
+        }}
+      />
+    );
   }
 
   if (page === "onboarding" || page === "preferences") {
