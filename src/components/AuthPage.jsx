@@ -53,6 +53,27 @@ function AuthPage({ supabase, notice, onGuestAccess }) {
       <nav className="navbar"><div className="logo">✦ Beauty Mentor</div></nav>
       <main className="auth-page">
         <section className="auth-card" aria-labelledby="auth-title">
+          <div className="auth-tabs" role="tablist" aria-label="Sign in mode">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "login"}
+              className={`auth-tab ${mode === "login" ? "active" : ""}`}
+              onClick={() => changeMode("login")}
+            >
+              Log in
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "signup"}
+              className={`auth-tab ${mode === "signup" ? "active" : ""}`}
+              onClick={() => changeMode("signup")}
+            >
+              Sign up
+            </button>
+          </div>
+
           <p className="tagline">SECURE RENDER DATABASE</p>
           <h1 id="auth-title">{mode === "login" ? "Welcome back" : "Create your account"}</h1>
           <p className="auth-intro">
@@ -63,7 +84,20 @@ function AuthPage({ supabase, notice, onGuestAccess }) {
 
           {notice && <p className="auth-message" role="status">{notice}</p>}
           {message && <p className="auth-message success" role="status">{message}</p>}
-          {error && <p className="auth-message error" role="alert">{error}</p>}
+          {error && (
+            <div className="auth-message error" role="alert">
+              <p>{error}</p>
+              {error.includes("Sign Up") && (
+                <button
+                  type="button"
+                  className="quick-signup-btn"
+                  onClick={() => changeMode("signup")}
+                >
+                  Switch to Sign up with this email →
+                </button>
+              )}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             <label htmlFor="auth-email">Email</label>

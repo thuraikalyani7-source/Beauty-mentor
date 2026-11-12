@@ -171,13 +171,13 @@ app.post("/api/auth/login", async (req, res) => {
       [cleanEmail]
     );
     if (userRes.rows.length === 0) {
-      return res.status(401).json({ error: "Invalid email or password." });
+      return res.status(401).json({ error: "No account found with this email. Please click Sign Up to register." });
     }
 
     const user = userRes.rows[0];
     const isValid = verifyPassword(password, user.salt, user.password_hash);
     if (!isValid) {
-      return res.status(401).json({ error: "Invalid email or password." });
+      return res.status(401).json({ error: "Incorrect password. Please try again." });
     }
 
     const token = signToken({ id: user.id, email: user.email });

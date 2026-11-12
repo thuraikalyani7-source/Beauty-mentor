@@ -15,20 +15,48 @@
 .auth-message.success { color: #526d5c; }
 .auth-loading { display: grid; min-height: calc(100vh - 145px); place-items: center; color: #70666e; }
 
-.resend-link-button {
-  display: inline-block;
-  margin: 4px 0 14px;
-  background: none;
-  border: none;
-  color: #a84d76;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: underline;
-  cursor: pointer;
-  text-align: left;
-  padding: 0;
+/* Prominent Mode Tabs */
+.auth-tabs {
+  display: flex;
+  background: #f7eef2;
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 22px;
 }
-.resend-link-button:disabled { opacity: 0.5; cursor: not-allowed; }
+.auth-tab {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #70666e;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.auth-tab.active {
+  background: #fff;
+  color: #a84d76;
+  box-shadow: 0 2px 8px rgba(168, 77, 118, 0.15);
+}
+
+.quick-signup-btn {
+  margin-top: 10px;
+  background: #a84d76;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-block;
+  transition: background 0.2s ease;
+}
+.quick-signup-btn:hover {
+  background: #8e3f62;
+}
 
 .guest-access-wrapper { margin-top: 14px; text-align: center; }
 .auth-divider { display: flex; align-items: center; text-align: center; margin: 10px 0; color: #a0949d; font-size: 13px; }
