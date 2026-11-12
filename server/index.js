@@ -6,6 +6,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { GoogleGenAI } from "@google/genai";
 import { generateExpertBeautyAdvice } from "./beautyEngine.js";
 
 const { Pool } = pg;
@@ -276,12 +277,27 @@ app.delete("/api/assistant/conversations", requireAssistantUser, async (req, res
   }
 });
 
-const MAX_MESSAGE_LENGTH = 2000;
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const MAX_OUTPUT_TOKENS = 1200;
-const GEMINI_MODEL = "gemini-2.5-flash";
-const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-const ASSISTANT_INSTRUCTIONS = `You are Beauty Mentor, an educational beauty and skincare assistant. Provide general, conservative, practical information only. Never diagnose or claim to identify a medical condition; do not promise results; do not recommend unsafe remedies, harsh treatments, or starting medication. Do not replace a qualified healthcare professional.`;
+const MAX_MESSAGE_LENGTH = 2500;
+const MAX_OUTPUT_TOKENS = 1500;
+
+const GEMINI_MODELS = [
+  "gemini-3.1-flash-lite",
+  "gemini-3.8-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash",
+  "gemini-3.7-flash",
+];
+
+const ASSISTANT_SYSTEM_PROMPT = `You are Beauty Mentor, a deeply caring, knowledgeable, empathetic, and human-like AI beauty, skincare, and self-care mentor.
+You talk like a real human beauty advisor, professional aesthetician, and supportive best friend.
+Key personality and guidelines:
+- Speak warmly, engagingly, and naturally (like real human chat apps such as ChatGPT and Gemini).
+- Use gentle emojis where appropriate to make the conversation inviting and friendly (e.g. ✨, 🌿, 🧴, 💧).
+- Give personalized, science-backed skincare, haircare, makeup, and self-care recommendations tailored directly to what the user describes.
+- Ask caring follow-up questions to understand their skin type, climate, budget, or routine better.
+- Break down explanations clearly with readable bullet points and steps when giving routines or ingredient pairings.
+- Always be supportive, reassuring, and promote healthy skin confidence. Never make rigid medical diagnoses; advise patch-testing and consulting a dermatologist for serious medical symptoms.`;
 
 app.post("/api/assistant/chat", requireAssistantUser, async (req, res) => {
   const body = req.body;
@@ -308,28 +324,63 @@ app.post("/api/assistant/chat", requireAssistantUser, async (req, res) => {
       [msgId, convId, userId, message]
     );
 
-    const apiKey = process.env.GEMINI_API_KEY?.trim();
     let reply = null;
-    if (apiKey && apiKey.startsWith("AIza")) {
+
+    // 1. Try Google Gemini with the configured API key
+    const rawApiKey = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : "";
+    if (rawApiKey) {
       try {
-        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: ASSISTANT_INSTRUCTIONS }] },
-            contents: [{ role: "user", parts: [{ text: message }] }],
-            generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS },
-          }),
-        });
-        if (geminiRes.ok) {
-          const data = await geminiRes.json();
-          reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        const ai = new GoogleGenAI({ apiKey: rawApiKey });
+        for (const model of GEMINI_MODELS) {
+          try {
+            const result = await ai.models.generateContent({
+              model,
+              contents: [{ role: "user", parts: [{ text: message }] }],
+              config: {
+                systemInstruction: ASSISTANT_SYSTEM_PROMPT,
+                temperature: 0.7,
+                maxOutputTokens: MAX_OUTPUT_TOKENS,
+              },
+            });
+            if (result && result.text && result.text.trim().length > 0) {
+              reply = result.text.trim();
+              break;
+            }
+          } catch (modelErr) {
+            process.stderr.write(`[gemini model ${model} unavailable: ${modelErr.message?.substring(0, 60)}]\n`);
+          }
         }
       } catch (geminiErr) {
-        process.stderr.write(`[gemini api error] ${geminiErr.message}\n`);
+        process.stderr.write(`[gemini sdk init error: ${geminiErr.message}]\n`);
       }
     }
 
+    // 2. If Gemini is temporarily experiencing high demand (503), fall back to Pollinations LLM
+    if (!reply) {
+      try {
+        const polRes = await fetch("https://text.pollinations.ai/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [
+              { role: "system", content: ASSISTANT_SYSTEM_PROMPT },
+              { role: "user", content: message },
+            ],
+            model: "openai-fast",
+          }),
+        });
+        if (polRes.ok) {
+          const text = await polRes.text();
+          if (text && !text.includes("Free limit reached") && text.trim().length > 15) {
+            reply = text.trim();
+          }
+        }
+      } catch (polErr) {
+        process.stderr.write(`[pollinations fallback error: ${polErr.message}]\n`);
+      }
+    }
+
+    // 3. Fall back to structured expert beauty knowledge engine
     if (!reply) {
       reply = generateExpertBeautyAdvice(message, body.context);
     }
