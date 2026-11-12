@@ -125,7 +125,7 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: "7mb", strict: true }));
 
 // --- Authentication Routes (Render PostgreSQL) ---
-app.post("/api/auth/signup", async (req, res) => {
+app.post(["/api/auth/signup", "/api/auth/register"], async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || typeof email !== "string" || !email.includes("@")) {
     return res.status(400).json({ error: "Please enter a valid email address." });
