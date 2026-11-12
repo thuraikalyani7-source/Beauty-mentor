@@ -109,6 +109,18 @@ function verifyPassword(password, salt, storedHash) {
 }
 
 app.disable("x-powered-by");
+
+// Enable CORS for all origins
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
 app.use(express.json({ limit: "7mb", strict: true }));
 
 // --- Authentication Routes (Render PostgreSQL) ---

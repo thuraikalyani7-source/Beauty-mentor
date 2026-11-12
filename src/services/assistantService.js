@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient.js";
+import { getApiUrl } from "./authClient.js";
 
 const statusMessages = {
   not_configured: "The AI service is not configured yet. No AI response was generated. You can still use your Beauty Guide.",
@@ -44,7 +45,7 @@ export class AssistantRequestError extends Error {
 export async function getAssistantStatus() {
   let response;
   try {
-    response = await fetch("/api/assistant/status", { headers: { Accept: "application/json" } });
+    response = await fetch(getApiUrl("/api/assistant/status"), { headers: { Accept: "application/json" } });
   } catch {
     throw new AssistantRequestError("Could not reach the assistant service.", { code: "network_error", retryable: true });
   }
@@ -86,7 +87,7 @@ async function fetchAuthenticatedAssistantApi(path, { body, method = "GET" } = {
   if (body !== undefined) headers["Content-Type"] = "application/json";
   let response;
   try {
-    response = await fetch(path, {
+    response = await fetch(getApiUrl(path), {
       method,
       headers,
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),

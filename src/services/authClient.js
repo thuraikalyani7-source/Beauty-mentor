@@ -13,18 +13,90 @@ function notify(event, session) {
   }
 }
 
+// Live Render Web Service URL fallback
+export const PROD_BACKEND_URL = "https://beauty-mentor-app.onrender.com";
+
+export function getApiUrl(endpoint) {
+  if (typeof window !== "undefined") {
+    // If the browser is directly on the Render web service, use relative URL
+    if (window.location.origin.includes("beauty-mentor-app.onrender.com")) {
+      return endpoint;
+    }
+  }
+  // Otherwise, route directly to the live Render backend
+  return `${PROD_BACKEND_URL}${endpoint}`;
+}
+
+async function safeRequestApi(endpoint, options = {}) {
+  const url = getApiUrl(endpoint);
+  let res;
+
+  try {
+    res = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        ...(options.headers || {}),
+      },
+    });
+  } catch (err) {
+    // If relative URL failed (e.g. running locally without local backend), fallback to live Render backend
+    if (!url.startsWith("http")) {
+      try {
+        res = await fetch(`${PROD_BACKEND_URL}${endpoint}`, {
+          ...options,
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            ...(options.headers || {}),
+          },
+        });
+      } catch {
+        throw new Error("Unable to connect to the server. Please check your network connection.");
+      }
+    } else {
+      throw new Error("Unable to connect to the server. Please check your network connection.");
+    }
+  }
+
+  // Safely parse body as text first to prevent "Unexpected end of JSON input"
+  const rawText = await res.text();
+  let data = null;
+
+  if (rawText && rawText.trim().length > 0) {
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      if (res.status >= 500) {
+        throw new Error("The Render server is currently waking up. Please wait 15 seconds and try again.");
+      }
+      throw new Error(`Server returned unexpected response (status ${res.status}). Please try again.`);
+    }
+  } else {
+    // Empty body returned
+    if (res.status >= 500 || res.status === 200) {
+      throw new Error("The server is waking up from standby. Please wait a moment and try again.");
+    }
+    throw new Error(`Server returned an empty response (status ${res.status}).`);
+  }
+
+  if (!res.ok) {
+    const errorMsg = data?.error || data?.message || "Operation failed. Please check your credentials.";
+    throw new Error(errorMsg);
+  }
+
+  return data;
+}
+
 export const authClient = {
   auth: {
     async signUp({ email, password }) {
-      const res = await fetch("/api/auth/signup", {
+      const data = await safeRequestApi("/api/auth/signup", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create account.");
-      }
+
       localStorage.setItem(TOKEN_KEY, data.token);
       localStorage.setItem(USER_KEY, JSON.stringify(data.user));
       const session = { access_token: data.token, user: data.user };
@@ -33,15 +105,11 @@ export const authClient = {
     },
 
     async signInWithPassword({ email, password }) {
-      const res = await fetch("/api/auth/login", {
+      const data = await safeRequestApi("/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Invalid login credentials.");
-      }
+
       localStorage.setItem(TOKEN_KEY, data.token);
       localStorage.setItem(USER_KEY, JSON.stringify(data.user));
       const session = { access_token: data.token, user: data.user };
@@ -53,7 +121,7 @@ export const authClient = {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
       try {
-        await fetch("/api/auth/logout", { method: "POST" });
+        await safeRequestApi("/api/auth/logout", { method: "POST" });
       } catch {}
       notify("SIGNED_OUT", null);
       return { error: null };
