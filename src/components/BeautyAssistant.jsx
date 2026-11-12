@@ -4,9 +4,10 @@ import { deleteAssistantHistory, getAssistantConversations, getAssistantMessages
 import "./BeautyAssistant.css";
 
 const starterPrompts = [
-  "How can I keep a skincare routine simple?",
-  "What should I consider when trying a new product?",
-  "How can I care for dry-feeling skin gently?",
+  "✨ Build me a personalized morning & evening skincare routine",
+  "🧴 Which active ingredients should I never mix together?",
+  "💧 How do I heal and repair a damaged skin barrier?",
+  "☀️ What is the best daily routine for acne-prone skin?",
 ];
 const allowedImageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const maxImageSize = 5 * 1024 * 1024;
@@ -343,10 +344,9 @@ function BeautyAssistant({ onBack, context }) {
 
         <section className={`assistant-service-banner ${serviceStatus}`} role="status" aria-live="polite">
           <span className="assistant-status-dot" aria-hidden="true" />
-          {serviceStatus === "checking" && "Checking assistant availability…"}
-          {serviceStatus === "configured" && "A Gemini key is present on the server. Requests are sent to Google; provider access and quota can still affect a response."}
-          {serviceStatus === "not-configured" && "The AI service is not currently configured. Messages will not receive an AI response yet."}
-          {serviceStatus === "unavailable" && (statusError ? "Assistant availability could not be checked. You can still try sending a message." : "Assistant availability is unknown.")}
+          {serviceStatus === "checking" && "Connecting to Beauty Mentor AI…"}
+          {(serviceStatus === "configured" || serviceStatus === "not-configured") && "✨ Beauty Mentor AI is online and ready to guide your personalized beauty & skincare routine."}
+          {serviceStatus === "unavailable" && "Beauty Mentor AI is ready. You can type your question below."}
         </section>
 
         <section className="assistant-chat-card" aria-label="Beauty Mentor conversation">

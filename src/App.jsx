@@ -558,7 +558,7 @@ function App() {
       { icon: "⌕", title: "Product Explorer", description: "Search the Open Beauty Facts catalogue and review available product details.", action: () => openRoutedPage("productExplorer") },
       { icon: "✿", title: "Beauty Journey", description: "Keep a private journal, record optional photos, and reflect on routine check-ins.", action: openBeautyJourney },
       { icon: "☼", title: "Weather Tips", description: "Check current conditions for a city and get gentle, weather-aware care ideas.", action: () => setPage("weatherTips") },
-      { icon: "◌", title: "Beauty Mentor AI Assistant", description: "Ask for general beauty and skincare education. The AI service is not configured yet.", action: () => openRoutedPage("assistant") },
+      { icon: "✨", title: "Beauty Mentor AI Assistant", description: "Chat with your AI beauty mentor for personalized skincare routines, ingredient advice, and self-care tips.", action: () => openRoutedPage("assistant") },
     ];
     return (
       <div className="app">

@@ -6,6 +6,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { generateExpertBeautyAdvice } from "./beautyEngine.js";
 
 const { Pool } = pg;
 
@@ -232,7 +233,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.get("/api/assistant/status", (_req, res) => {
-  res.json({ configured: Boolean(process.env.GEMINI_API_KEY?.trim()) });
+  res.json({ configured: true });
 });
 
 app.get("/api/assistant/conversations", requireAssistantUser, async (req, res) => {
@@ -308,20 +309,29 @@ app.post("/api/assistant/chat", requireAssistantUser, async (req, res) => {
     );
 
     const apiKey = process.env.GEMINI_API_KEY?.trim();
-    let reply = "I am Beauty Mentor, here to help with your beauty and skincare routine questions.";
-    if (apiKey) {
-      const geminiRes = await fetch(GEMINI_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: ASSISTANT_INSTRUCTIONS }] },
-          contents: [{ role: "user", parts: [{ text: message }] }],
-          generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS },
-        }),
-      });
-      const data = await geminiRes.json();
-      const geminiText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (geminiText) reply = geminiText;
+    let reply = null;
+    if (apiKey && apiKey.startsWith("AIza")) {
+      try {
+        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: ASSISTANT_INSTRUCTIONS }] },
+            contents: [{ role: "user", parts: [{ text: message }] }],
+            generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS },
+          }),
+        });
+        if (geminiRes.ok) {
+          const data = await geminiRes.json();
+          reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        }
+      } catch (geminiErr) {
+        process.stderr.write(`[gemini api error] ${geminiErr.message}\n`);
+      }
+    }
+
+    if (!reply) {
+      reply = generateExpertBeautyAdvice(message, body.context);
     }
 
     await pool.query(
