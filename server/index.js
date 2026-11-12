@@ -23,13 +23,16 @@ for (const envFile of envFileCandidates) {
 const app = express();
 const port = Number.parseInt(process.env.PORT || "3001", 10);
 const host = process.env.HOST || "0.0.0.0";
-const JWT_SECRET = process.env.JWT_SECRET || "beauty_mentor_render_secret_key_8f7b2c9e1a4d6f0a";
+const JWT_SECRET = process.env.JWT_SECRET || "beauty_mentor_default_jwt_secret_render";
 
-const DATABASE_URL = process.env.DATABASE_URL || "postgresql://beauty_mentor_user:XkGnPfrEoN5BNh8CCRYNgkrm3gpjflTG@dpg-dbo6lc8u01pc73edibog-a.oregon-postgres.render.com:5432/beauty_mentor";
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
+  process.stderr.write("[CRITICAL ERROR] DATABASE_URL is required in environment variables.\n");
+}
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  ssl: DATABASE_URL && DATABASE_URL.includes("render.com") ? { rejectUnauthorized: false } : false,
 });
 
 async function initDb() {

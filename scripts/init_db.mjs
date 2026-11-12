@@ -1,11 +1,15 @@
 import pg from 'pg';
 const { Pool } = pg;
 
-const connectionString = 'postgresql://beauty_mentor_user:XkGnPfrEoN5BNh8CCRYNgkrm3gpjflTG@dpg-dbo6lc8u01pc73edibog-a.oregon-postgres.render.com:5432/beauty_mentor';
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  console.error("Please set DATABASE_URL environment variable.");
+  process.exit(1);
+}
 
 const pool = new Pool({
   connectionString,
-  ssl: { rejectUnauthorized: false },
+  ssl: connectionString.includes('render.com') ? { rejectUnauthorized: false } : false,
 });
 
 async function main() {
